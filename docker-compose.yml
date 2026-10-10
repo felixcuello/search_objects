@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - db
+    volumes:
+      - ./search_objects/:/app
     ports:
       - 5555:5000
     networks:
