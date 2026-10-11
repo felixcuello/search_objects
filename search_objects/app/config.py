@@ -1,0 +1,3 @@
+class Config:
+    MAX_CONTENT_LENGTH = 10 * 1024 * 1024
+    DEFAULT_THRESHOLD = 0.3

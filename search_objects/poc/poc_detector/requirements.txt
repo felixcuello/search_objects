@@ -1,0 +1,6 @@
+# gradio is installed by the Space from `sdk_version` in README.md; keep both in sync.
+spaces==0.51.3
+torch==2.14.1
+torchvision==0.29.1
+transformers==5.18.0
+pillow==12.3.0

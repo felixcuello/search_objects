@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Detección de objetos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main>
+      <h1>Detección de muebles y objetos</h1>
+      <p>Suba una imagen para detectar muebles y objetos.</p>
+
+      {% if error %}
+        <p class="error" role="alert">{{ error }}</p>
+      {% endif %}
+
+      <form
+        method="post"
+        action="{{ url_for('main.detect') }}"
+        enctype="multipart/form-data"
+        data-detect-form
+      >
+        <label for="image">Imagen</label>
+        <input id="image" name="image" type="file" accept="image/*" required>
+
+        <label for="threshold">
+          Umbral de confianza:
+          <span id="threshold-value">{{ "%.2f"|format(threshold) }}</span>
+        </label>
+        <input
+          id="threshold"
+          name="threshold"
+          type="range"
+          min="0.05"
+          max="0.90"
+          step="0.05"
+          value="{{ "%.2f"|format(threshold) }}"
+        >
+
+        <button type="submit">Detectar objetos</button>
+        <p class="hint" hidden data-busy-message>Procesando la imagen. La primera detección puede tardar varios minutos.</p>
+      </form>
+
+      {% if overlay_src %}
+        <section>
+          <h2>Vista previa</h2>
+          <img class="overlay" src="{{ overlay_src }}" alt="Imagen con los objetos detectados">
+        </section>
+      {% endif %}
+
+      {% if objects is not none %}
+        <section>
+          <h2>Objetos detectados</h2>
+          {% if objects %}
+            <ul class="object-list">
+              {% for obj in objects %}
+                <li>
+                  <span class="object-label">{{ obj.label }}</span>
+                  <span class="object-confidence">{{ "%.0f"|format(obj.confidence * 100) }}%</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p>No se detectaron objetos con el umbral indicado.</p>
+          {% endif %}
+        </section>
+      {% endif %}
+    </main>
+    <script>
+      const thresholdInput = document.getElementById("threshold");
+      const thresholdValue = document.getElementById("threshold-value");
+      thresholdInput.addEventListener("input", () => {
+        thresholdValue.textContent = Number(thresholdInput.value).toFixed(2);
+      });
+
+      const form = document.querySelector("[data-detect-form]");
+      const button = form.querySelector("button");
+      const busyMessage = form.querySelector("[data-busy-message]");
+      form.addEventListener("submit", () => {
+        button.disabled = true;
+        busyMessage.hidden = false;
+      });
+    </script>
+  </body>
+</html>
