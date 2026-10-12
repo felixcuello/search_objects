@@ -1,30 +1,50 @@
 :root {
-  --bg: #f6f4f1;
-  --text: #1c1917;
-  --muted: #57534e;
-  --accent: #0f766e;
-  --accent-hover: #115e59;
-  --error: #9f1239;
-  --card: #ffffff;
-  --border: #e7e5e4;
+  color-scheme: dark;
+  --bg: #0e1013;
+  --text: #f4f1ea;
+  --muted: #9a9488;
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --error: #fda4af;
+  --error-bg: #3f1d24;
+  --card: #171a1f;
+  --border: #2a2f38;
+  --box-border: rgba(45, 212, 191, 0.72);
+  --box-fill: rgba(45, 212, 191, 0.28);
+  --name-bg: rgba(14, 16, 19, 0.88);
+  --row-active: rgba(45, 212, 191, 0.16);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
+}
+
+body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   line-height: 1.5;
 }
 
 main {
-  max-width: 52rem;
+  max-width: 72rem;
   margin: 0 auto;
   padding: 2rem 1.25rem 4rem;
+}
+
+main.has-results {
+  max-width: none;
+  margin: 0;
+  padding: 2rem 1.25rem 4rem 0.75rem;
+}
+
+.page-head {
+  max-width: 36rem;
 }
 
 h1,
@@ -39,7 +59,7 @@ h1 {
 }
 
 h2 {
-  margin: 2rem 0 0.75rem;
+  margin: 0 0 0.75rem;
   font-size: 1.2rem;
 }
 
@@ -64,6 +84,11 @@ label {
 input[type="file"],
 input[type="range"] {
   width: 100%;
+  accent-color: var(--accent);
+}
+
+input[type="file"] {
+  color: var(--muted);
 }
 
 button {
@@ -73,8 +98,9 @@ button {
   border: 0;
   border-radius: 0.5rem;
   background: var(--accent);
-  color: #fff;
+  color: #042f2e;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -90,7 +116,7 @@ button:disabled {
 .error {
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
-  background: #ffe4e6;
+  background: var(--error-bg);
   color: var(--error);
 }
 
@@ -99,41 +125,107 @@ button:disabled {
   font-size: 0.9rem;
 }
 
-.overlay {
+.results {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+
+.detect-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: #050608;
+}
+
+.detect-stage img {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 0.75rem;
-  border: 1px solid var(--border);
-  background: var(--card);
 }
 
-.object-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
+.detect-box {
+  position: absolute;
+  border: 2px solid var(--box-border);
+  background: transparent;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
 }
 
-.object-list li {
+.detect-box-name {
+  position: absolute;
+  left: 0.4rem;
+  top: 0.4rem;
+  max-width: calc(100% - 0.8rem);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  background: var(--name-bg);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.detect-box:hover,
+.detect-box:focus-visible,
+.detect-box.is-active {
+  background: var(--box-fill);
+  outline: none;
+}
+
+.detect-box:hover .detect-box-name,
+.detect-box:focus-visible .detect-box-name,
+.detect-box.is-active .detect-box-name {
+  opacity: 1;
+}
+
+.object-legend {
+  min-width: 0;
+}
+
+.object-matrix {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: var(--border);
+}
+
+.object-cell {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  justify-content: center;
+  min-height: 4.75rem;
+  padding: 0.7rem 0.6rem;
+  background: var(--card);
+  color: var(--text);
+  text-align: center;
+  text-decoration: none;
+  line-height: 1.25;
+  cursor: pointer;
 }
 
-.object-list li:last-child {
-  border-bottom: 0;
+.object-cell.is-empty {
+  cursor: default;
+  pointer-events: none;
 }
 
-.object-label {
-  text-transform: none;
+.object-cell:hover,
+.object-cell:focus-visible,
+.object-cell.is-active {
+  background: var(--row-active);
+  outline: none;
 }
 
-.object-confidence {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+@media (max-width: 900px) {
+  .object-matrix {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

@@ -17,7 +17,10 @@ def create_app() -> Flask:
                 error="La imagen supera el tamaño máximo permitido.",
                 threshold=app.config["DEFAULT_THRESHOLD"],
                 objects=None,
-                overlay_src=None,
+                overlays=[],
+                image_src=None,
+                image_width=None,
+                image_height=None,
             ),
             413,
         )

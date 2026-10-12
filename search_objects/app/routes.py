@@ -1,14 +1,22 @@
-import base64
-
 from flask import Blueprint, current_app, render_template, request
 
 from app.services.detector import InvalidImageError, clamp_threshold, detect_objects, load_image
-from app.services.overlay import annotate_image
+from app.services.overlay import assign_display_names, encode_jpeg_data_uri, overlay_objects
 
 bp = Blueprint("main", __name__)
 
 
-def _render(*, error=None, threshold=None, objects=None, overlay_src=None, status=200):
+def _render(
+    *,
+    error=None,
+    threshold=None,
+    objects=None,
+    overlays=None,
+    image_src=None,
+    image_width=None,
+    image_height=None,
+    status=200,
+):
     if threshold is None:
         threshold = current_app.config["DEFAULT_THRESHOLD"]
     return (
@@ -17,7 +25,10 @@ def _render(*, error=None, threshold=None, objects=None, overlay_src=None, statu
             error=error,
             threshold=threshold,
             objects=objects,
-            overlay_src=overlay_src,
+            overlays=overlays or [],
+            image_src=image_src,
+            image_width=image_width,
+            image_height=image_height,
         ),
         status,
     )
@@ -48,7 +59,18 @@ def detect():
             status=400,
         )
 
+    image_width, image_height = image.size
     objects = detect_objects(image, threshold=threshold)
-    overlay_png = annotate_image(image, objects)
-    overlay_src = "data:image/png;base64," + base64.b64encode(overlay_png).decode("ascii")
-    return _render(threshold=threshold, objects=objects, overlay_src=overlay_src)
+    for index, obj in enumerate(objects):
+        # Ids must be assigned before overlay stacking so list and boxes stay paired.
+        obj["id"] = f"obj-{index}"
+    assign_display_names(objects)
+    overlays = overlay_objects(objects, image_width, image_height)
+    return _render(
+        threshold=threshold,
+        objects=objects,
+        overlays=overlays,
+        image_src=encode_jpeg_data_uri(image),
+        image_width=image_width,
+        image_height=image_height,
+    )

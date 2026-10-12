@@ -1,51 +1,70 @@
+import base64
 import io
-from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
-
-_FONT_CANDIDATES = (
-    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
-)
+from PIL import Image
 
 
-def _load_font(size: int) -> ImageFont.ImageFont:
-    for path in _FONT_CANDIDATES:
-        if path.exists():
-            return ImageFont.truetype(str(path), size=size)
-    return ImageFont.load_default()
+def encode_jpeg_data_uri(image: Image.Image) -> str:
+    """Encode the unannotated RGB image as a JPEG data URI.
+
+    The URI must carry the original photo so HTML boxes can sit on top.
+    """
+    buffer = io.BytesIO()
+    image.convert("RGB").save(buffer, format="JPEG", quality=88)
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return "data:image/jpeg;base64," + encoded
 
 
-def annotate_image(image: Image.Image, objects: list[dict]) -> bytes:
-    annotated = image.copy().convert("RGBA")
-    draw = ImageDraw.Draw(annotated, "RGBA")
-    shortest_side = min(annotated.size)
-    line_width = max(3, shortest_side // 200)
-    font = _load_font(max(14, shortest_side // 40))
-    box_color = (225, 29, 72, 255)
-    label_bg = (225, 29, 72, 220)
-    label_fg = (255, 255, 255, 255)
+def box_css_percents(box: dict, image_width: int, image_height: int) -> dict[str, float]:
+    """Map a detector box in pixels to CSS percent positions.
 
+    Values must stay relative to the image so overlays track scaled layout.
+    """
+    width = max(image_width, 1)
+    height = max(image_height, 1)
+    return {
+        "left": box["xmin"] / width * 100,
+        "top": box["ymin"] / height * 100,
+        "width": (box["xmax"] - box["xmin"]) / width * 100,
+        "height": (box["ymax"] - box["ymin"]) / height * 100,
+    }
+
+
+def assign_display_names(objects: list[dict]) -> None:
+    """Set display_name so duplicate labels must be numbered in the UI.
+
+    The original label must stay unchanged for search query values.
+    """
+    counts: dict[str, int] = {}
+    for obj in objects:
+        counts[obj["label"]] = counts.get(obj["label"], 0) + 1
+    seen: dict[str, int] = {}
+    for obj in objects:
+        label = obj["label"]
+        if counts[label] == 1:
+            obj["display_name"] = label
+            continue
+        seen[label] = seen.get(label, 0) + 1
+        obj["display_name"] = f"{label} {seen[label]}"
+
+
+def overlay_objects(objects: list[dict], image_width: int, image_height: int) -> list[dict]:
+    """Attach CSS percents and stack smaller boxes above larger ones.
+
+    Smaller detections must sit on top so nested objects stay clickable.
+    """
+    overlays = []
     for obj in objects:
         box = obj["box"]
-        xmin, ymin, xmax, ymax = box["xmin"], box["ymin"], box["xmax"], box["ymax"]
-        draw.rectangle([xmin, ymin, xmax, ymax], outline=box_color, width=line_width)
-
-        caption = f"{obj['label']} {obj['confidence']:.0%}"
-        text_bbox = draw.textbbox((xmin, ymin), caption, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        padding = max(4, line_width)
-        label_top = max(0, ymin - text_height - padding * 2)
-        label_box = [
-            xmin,
-            label_top,
-            xmin + text_width + padding * 2,
-            label_top + text_height + padding * 2,
-        ]
-        draw.rectangle(label_box, fill=label_bg)
-        draw.text((xmin + padding, label_top + padding), caption, fill=label_fg, font=font)
-
-    buffer = io.BytesIO()
-    annotated.save(buffer, format="PNG")
-    return buffer.getvalue()
+        area = max(0, box["xmax"] - box["xmin"]) * max(0, box["ymax"] - box["ymin"])
+        overlays.append(
+            {
+                **obj,
+                "css": box_css_percents(box, image_width, image_height),
+                "area": area,
+            }
+        )
+    overlays.sort(key=lambda item: item["area"], reverse=True)
+    for index, obj in enumerate(overlays, start=1):
+        obj["z_index"] = index
+    return overlays
