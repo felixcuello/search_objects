@@ -21,6 +21,9 @@ shell:
 run:
 	@docker compose run --service-ports --rm web
 
+stop:
+	@docker compose stop
+
 db-upgrade:
 	@docker compose run --rm web flask db upgrade
 
