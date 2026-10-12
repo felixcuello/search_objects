@@ -94,7 +94,9 @@
       {% endif %}
       </div>
       {% if image_src %}
-        <div class="side-column" aria-hidden="true"></div>
+        <aside class="side-column" data-search-panel>
+          <p class="search-panel" data-search-status></p>
+        </aside>
       {% endif %}
     </main>
     <script>
@@ -107,10 +109,54 @@
       const form = document.querySelector("[data-detect-form]");
       const button = form.querySelector("button");
       const busyMessage = form.querySelector("[data-busy-message]");
+      const hasResults = Boolean(document.querySelector("main.has-results"));
+
+      function warnOnLeave(event) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+
+      if (hasResults) {
+        window.addEventListener("beforeunload", warnOnLeave);
+      }
+
       form.addEventListener("submit", () => {
+        window.removeEventListener("beforeunload", warnOnLeave);
         button.disabled = true;
         busyMessage.hidden = false;
       });
+
+      function isModifiedClick(event) {
+        return event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+      }
+
+      function bindObjectSearch(root, panel) {
+        const status = panel.querySelector("[data-search-status]");
+        root.addEventListener("click", async (event) => {
+          const link = event.target.closest("a[href*='/object_search']");
+          if (!link || !root.contains(link) || isModifiedClick(event)) {
+            return;
+          }
+          event.preventDefault();
+          status.className = "search-panel is-loading";
+          status.textContent = "Buscando objetos similares…";
+          try {
+            const response = await fetch(link.href);
+            if (!response.ok) {
+              throw new Error("search failed");
+            }
+            const data = await response.json();
+            const query = data.query || "";
+            status.className = "search-panel is-empty";
+            status.textContent = query
+              ? `No hay resultados de catálogo para «${query}» todavía.`
+              : "No hay resultados de catálogo todavía.";
+          } catch {
+            status.className = "search-panel is-error";
+            status.textContent = "No pudimos completar la búsqueda. Intente nuevamente.";
+          }
+        });
+      }
 
       // Pair each list row with its box so hover must highlight both.
       function bindHoverSync(root) {
@@ -140,8 +186,12 @@
       }
 
       const results = document.querySelector("[data-hover-sync]");
+      const searchPanel = document.querySelector("[data-search-panel]");
       if (results) {
         bindHoverSync(results);
+      }
+      if (results && searchPanel) {
+        bindObjectSearch(results, searchPanel);
       }
     </script>
   </body>

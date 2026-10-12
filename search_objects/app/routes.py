@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, render_template, request
+from flask import Blueprint, current_app, jsonify, render_template, request
 
 from app.services.detector import InvalidImageError, clamp_threshold, detect_objects, load_image
 from app.services.overlay import (
@@ -80,3 +80,17 @@ def detect():
         image_width=image_width,
         image_height=image_height,
     )
+
+
+@bp.get("/object_search")
+def object_search():
+    """Return catalog hits for a selected detection. Catalog lookup is later."""
+    query = (request.args.get("q") or "").strip()
+    box = {
+        "xmin": request.args.get("xmin", type=int),
+        "ymin": request.args.get("ymin", type=int),
+        "xmax": request.args.get("xmax", type=int),
+        "ymax": request.args.get("ymax", type=int),
+    }
+    return jsonify({"query": query, "box": box, "results": []})
+

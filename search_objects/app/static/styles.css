@@ -223,7 +223,17 @@ button:disabled {
 
 .has-results .side-column {
   min-width: 0;
+  padding: 0.75rem 1rem 1rem;
   border-left: 1px solid var(--border);
+}
+
+.search-panel {
+  margin: 0;
+  color: var(--muted);
+}
+
+.search-panel.is-error {
+  color: var(--error);
 }
 
 .detect-box {
@@ -327,7 +337,8 @@ button:disabled {
   }
 
   .has-results .side-column {
-    display: none;
+    border-left: 0;
+    border-top: 1px solid var(--border);
   }
 
   .object-matrix {
