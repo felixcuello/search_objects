@@ -60,7 +60,7 @@
               <a
                 class="detect-box"
                 data-object-id="{{ obj.id }}"
-                href="/object_search?q={{ obj.label|urlencode }}"
+                href="{{ obj.search_url }}"
                 style="left: {{ obj.css.left }}%; top: {{ obj.css.top }}%; width: {{ obj.css.width }}%; height: {{ obj.css.height }}%; z-index: {{ obj.z_index }};"
               >
                 <span class="detect-box-name">{{ obj.display_name }}</span>
@@ -75,7 +75,7 @@
                   <a
                     class="object-cell"
                     data-object-id="{{ obj.id }}"
-                    href="/object_search?q={{ obj.label|urlencode }}"
+                    href="{{ obj.search_url }}"
                   >
                     {{ obj.display_name }}
                   </a>

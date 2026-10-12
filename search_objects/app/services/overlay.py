@@ -1,5 +1,6 @@
 import base64
 import io
+from urllib.parse import urlencode
 
 from PIL import Image
 
@@ -46,6 +47,24 @@ def assign_display_names(objects: list[dict]) -> None:
             continue
         seen[label] = seen.get(label, 0) + 1
         obj["display_name"] = f"{label} {seen[label]}"
+
+
+def attach_search_urls(objects: list[dict]) -> None:
+    """Put detector box pixels on the catalog search URL.
+
+    Later search and replace steps must know which crop was selected.
+    """
+    for obj in objects:
+        box = obj["box"]
+        obj["search_url"] = "/object_search?" + urlencode(
+            {
+                "q": obj["label"],
+                "xmin": box["xmin"],
+                "ymin": box["ymin"],
+                "xmax": box["xmax"],
+                "ymax": box["ymax"],
+            }
+        )
 
 
 def overlay_objects(objects: list[dict], image_width: int, image_height: int) -> list[dict]:
