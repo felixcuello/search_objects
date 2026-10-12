@@ -1,13 +1,21 @@
+import importlib
+
 from flask import Flask, render_template
+from sqlalchemy import text
 
 from app.config import Config
+from app.extensions import db, migrate
 from app.routes import bp
 
 
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
+    db.init_app(app)
+    migrate.init_app(app, db)
+    importlib.import_module("app.models")
     app.register_blueprint(bp)
+    _register_cli(app)
 
     @app.errorhandler(413)
     def request_entity_too_large(_error):
@@ -26,3 +34,13 @@ def create_app() -> Flask:
         )
 
     return app
+
+
+def _register_cli(app: Flask) -> None:
+    """Register Flask CLI commands that must run inside an app context."""
+
+    @app.cli.command("db-ping")
+    def db_ping() -> None:
+        """Confirm the app must reach MySQL with SELECT 1."""
+        db.session.execute(text("SELECT 1"))
+        print("database ok")
