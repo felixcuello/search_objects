@@ -19,5 +19,34 @@ This is the intended product, not the current implementation.
 - Flask UI for steps 1–2: upload an image, detect furniture/objects with OWLv2, and show a Spanish list plus an overlay image.
 - Image-manipulation proofs of concept live in `search_objects/poc_image_manipulation/`.
 - The Gradio detector demo lives in `search_objects/poc_detector/`.
+- MySQL is connected via Flask-SQLAlchemy and Flask-Migrate.
+- There are no catalog tables yet.
 - Steps 3–7 (catalog search, board, selection, replace, buy) are not built yet.
 - The first detection downloads the Hugging Face model and can take several minutes, especially on CPU.
+
+## Database
+
+Flask uses Flask-SQLAlchemy (ORM) and Flask-Migrate / Alembic (migrations), with PyMySQL against the Compose `db` service.
+
+If you come from Rails:
+
+```
+Rails                         Flask
+-------------------------     --------------------------------
+ActiveRecord                  Flask-SQLAlchemy
+db/migrate                    search_objects/migrations/
+rails db:migrate              make db-upgrade
+rails db:rollback             docker compose run --rm web flask db downgrade
+rails g migration             make db-migrate MSG='create whatever'
+```
+
+Commands:
+
+```
+make db-ping      # SELECT 1 against MySQL
+make db-upgrade   # apply migrations (flask db upgrade)
+make db-migrate   # autogenerate from models: make db-migrate MSG='create products'
+```
+
+Add a model under `search_objects/app/models/`, then `make db-migrate MSG='...'` and `make db-upgrade`.
+`flask db migrate` diffs models against the database, like schema changes followed by `db:migrate`.

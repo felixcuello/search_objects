@@ -11,8 +11,10 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       HF_HOME: /root/.cache/huggingface
+      FLASK_APP: main.py
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./search_objects/:/app
       - hf_cache:/root/.cache/huggingface
