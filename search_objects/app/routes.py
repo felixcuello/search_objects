@@ -1,7 +1,12 @@
-from flask import Blueprint, current_app, render_template, request
+from flask import Blueprint, current_app, jsonify, render_template, request
 
 from app.services.detector import InvalidImageError, clamp_threshold, detect_objects, load_image
-from app.services.overlay import assign_display_names, encode_jpeg_data_uri, overlay_objects
+from app.services.overlay import (
+    assign_display_names,
+    attach_search_urls,
+    encode_jpeg_data_uri,
+    overlay_objects,
+)
 
 bp = Blueprint("main", __name__)
 
@@ -65,6 +70,7 @@ def detect():
         # Ids must be assigned before overlay stacking so list and boxes stay paired.
         obj["id"] = f"obj-{index}"
     assign_display_names(objects)
+    attach_search_urls(objects)
     overlays = overlay_objects(objects, image_width, image_height)
     return _render(
         threshold=threshold,
@@ -74,3 +80,17 @@ def detect():
         image_width=image_width,
         image_height=image_height,
     )
+
+
+@bp.get("/object_search")
+def object_search():
+    """Return catalog hits for a selected detection. Catalog lookup is later."""
+    query = (request.args.get("q") or "").strip()
+    box = {
+        "xmin": request.args.get("xmin", type=int),
+        "ymin": request.args.get("ymin", type=int),
+        "xmax": request.args.get("xmax", type=int),
+        "ymax": request.args.get("ymax", type=int),
+    }
+    return jsonify({"query": query, "box": box, "results": []})
+

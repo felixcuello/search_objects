@@ -8,6 +8,7 @@
   </head>
   <body>
     <main{% if image_src %} class="has-results"{% endif %}>
+      <div class="page-column">
       <div class="page-head">
         <h1>Detección de muebles y objetos</h1>
         <p>Suba una imagen para detectar muebles y objetos.</p>
@@ -46,18 +47,20 @@
 
       {% if image_src %}
         <section class="results" data-hover-sync>
+          <div class="media-block">
           <div class="detect-stage">
             <img
               src="{{ image_src }}"
               width="{{ image_width }}"
               height="{{ image_height }}"
+              style="aspect-ratio: {{ image_width }} / {{ image_height }};"
               alt="Imagen con los objetos detectados"
             >
             {% for obj in overlays %}
               <a
                 class="detect-box"
                 data-object-id="{{ obj.id }}"
-                href="/object_search?q={{ obj.label|urlencode }}"
+                href="{{ obj.search_url }}"
                 style="left: {{ obj.css.left }}%; top: {{ obj.css.top }}%; width: {{ obj.css.width }}%; height: {{ obj.css.height }}%; z-index: {{ obj.z_index }};"
               >
                 <span class="detect-box-name">{{ obj.display_name }}</span>
@@ -72,7 +75,7 @@
                   <a
                     class="object-cell"
                     data-object-id="{{ obj.id }}"
-                    href="/object_search?q={{ obj.label|urlencode }}"
+                    href="{{ obj.search_url }}"
                   >
                     {{ obj.display_name }}
                   </a>
@@ -86,7 +89,14 @@
               <p>No se detectaron objetos con el umbral indicado.</p>
             {% endif %}
           </div>
+          </div>
         </section>
+      {% endif %}
+      </div>
+      {% if image_src %}
+        <aside class="side-column" data-search-panel>
+          <p class="search-panel" data-search-status></p>
+        </aside>
       {% endif %}
     </main>
     <script>
@@ -99,10 +109,54 @@
       const form = document.querySelector("[data-detect-form]");
       const button = form.querySelector("button");
       const busyMessage = form.querySelector("[data-busy-message]");
+      const hasResults = Boolean(document.querySelector("main.has-results"));
+
+      function warnOnLeave(event) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+
+      if (hasResults) {
+        window.addEventListener("beforeunload", warnOnLeave);
+      }
+
       form.addEventListener("submit", () => {
+        window.removeEventListener("beforeunload", warnOnLeave);
         button.disabled = true;
         busyMessage.hidden = false;
       });
+
+      function isModifiedClick(event) {
+        return event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+      }
+
+      function bindObjectSearch(root, panel) {
+        const status = panel.querySelector("[data-search-status]");
+        root.addEventListener("click", async (event) => {
+          const link = event.target.closest("a[href*='/object_search']");
+          if (!link || !root.contains(link) || isModifiedClick(event)) {
+            return;
+          }
+          event.preventDefault();
+          status.className = "search-panel is-loading";
+          status.textContent = "Buscando objetos similares…";
+          try {
+            const response = await fetch(link.href);
+            if (!response.ok) {
+              throw new Error("search failed");
+            }
+            const data = await response.json();
+            const query = data.query || "";
+            status.className = "search-panel is-empty";
+            status.textContent = query
+              ? `No hay resultados de catálogo para «${query}» todavía.`
+              : "No hay resultados de catálogo todavía.";
+          } catch {
+            status.className = "search-panel is-error";
+            status.textContent = "No pudimos completar la búsqueda. Intente nuevamente.";
+          }
+        });
+      }
 
       // Pair each list row with its box so hover must highlight both.
       function bindHoverSync(root) {
@@ -132,8 +186,12 @@
       }
 
       const results = document.querySelector("[data-hover-sync]");
+      const searchPanel = document.querySelector("[data-search-panel]");
       if (results) {
         bindHoverSync(results);
+      }
+      if (results && searchPanel) {
+        bindObjectSearch(results, searchPanel);
       }
     </script>
   </body>
