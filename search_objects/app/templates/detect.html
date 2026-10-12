@@ -53,6 +53,7 @@
               src="{{ image_src }}"
               width="{{ image_width }}"
               height="{{ image_height }}"
+              style="aspect-ratio: {{ image_width }} / {{ image_height }};"
               alt="Imagen con los objetos detectados"
             >
             {% for obj in overlays %}
@@ -141,55 +142,6 @@
       const results = document.querySelector("[data-hover-sync]");
       if (results) {
         bindHoverSync(results);
-      }
-
-      // Keep form, image, and matrix on one screen; matrix width matches the photo.
-      function matchMatrixToImage(img, stage, legend) {
-        const width = Math.round(img.getBoundingClientRect().width);
-        if (width <= 0) {
-          return;
-        }
-        stage.style.width = `${width}px`;
-        legend.style.width = `${width}px`;
-      }
-
-      function fitResultsToViewport() {
-        const main = document.querySelector("main.has-results");
-        const column = main && main.querySelector(".page-column");
-        const stage = main && main.querySelector(".detect-stage");
-        const img = stage && stage.querySelector("img");
-        const legend = main && main.querySelector(".object-legend");
-        if (!main || !column || !stage || !img || !legend) {
-          return;
-        }
-
-        img.style.maxHeight = "";
-        img.style.maxWidth = "";
-        stage.style.width = "";
-        legend.style.width = "";
-
-        const columnWidth = column.clientWidth;
-        img.style.maxWidth = `${columnWidth}px`;
-
-        function applyHeight() {
-          const columnRect = column.getBoundingClientRect();
-          const imgRect = img.getBoundingClientRect();
-          const available = columnRect.bottom - legend.getBoundingClientRect().height - imgRect.top;
-          img.style.maxHeight = `${Math.max(80, available)}px`;
-          matchMatrixToImage(img, stage, legend);
-        }
-
-        applyHeight();
-        requestAnimationFrame(() => {
-          applyHeight();
-        });
-      }
-
-      const resultsImg = document.querySelector("main.has-results .detect-stage img");
-      if (resultsImg) {
-        resultsImg.addEventListener("load", fitResultsToViewport);
-        window.addEventListener("resize", fitResultsToViewport);
-        fitResultsToViewport();
       }
     </script>
   </body>
