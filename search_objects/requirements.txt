@@ -8,3 +8,4 @@ Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.1.0
 PyMySQL==1.1.2
 cryptography==44.0.2
+boto3==1.43.0
