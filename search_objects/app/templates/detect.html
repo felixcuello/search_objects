@@ -8,6 +8,7 @@
   </head>
   <body>
     <main{% if image_src %} class="has-results"{% endif %}>
+      <div class="page-column">
       <div class="page-head">
         <h1>Detección de muebles y objetos</h1>
         <p>Suba una imagen para detectar muebles y objetos.</p>
@@ -46,6 +47,7 @@
 
       {% if image_src %}
         <section class="results" data-hover-sync>
+          <div class="media-block">
           <div class="detect-stage">
             <img
               src="{{ image_src }}"
@@ -86,7 +88,12 @@
               <p>No se detectaron objetos con el umbral indicado.</p>
             {% endif %}
           </div>
+          </div>
         </section>
+      {% endif %}
+      </div>
+      {% if image_src %}
+        <div class="side-column" aria-hidden="true"></div>
       {% endif %}
     </main>
     <script>
@@ -134,6 +141,55 @@
       const results = document.querySelector("[data-hover-sync]");
       if (results) {
         bindHoverSync(results);
+      }
+
+      // Keep form, image, and matrix on one screen; matrix width matches the photo.
+      function matchMatrixToImage(img, stage, legend) {
+        const width = Math.round(img.getBoundingClientRect().width);
+        if (width <= 0) {
+          return;
+        }
+        stage.style.width = `${width}px`;
+        legend.style.width = `${width}px`;
+      }
+
+      function fitResultsToViewport() {
+        const main = document.querySelector("main.has-results");
+        const column = main && main.querySelector(".page-column");
+        const stage = main && main.querySelector(".detect-stage");
+        const img = stage && stage.querySelector("img");
+        const legend = main && main.querySelector(".object-legend");
+        if (!main || !column || !stage || !img || !legend) {
+          return;
+        }
+
+        img.style.maxHeight = "";
+        img.style.maxWidth = "";
+        stage.style.width = "";
+        legend.style.width = "";
+
+        const columnWidth = column.clientWidth;
+        img.style.maxWidth = `${columnWidth}px`;
+
+        function applyHeight() {
+          const columnRect = column.getBoundingClientRect();
+          const imgRect = img.getBoundingClientRect();
+          const available = columnRect.bottom - legend.getBoundingClientRect().height - imgRect.top;
+          img.style.maxHeight = `${Math.max(80, available)}px`;
+          matchMatrixToImage(img, stage, legend);
+        }
+
+        applyHeight();
+        requestAnimationFrame(() => {
+          applyHeight();
+        });
+      }
+
+      const resultsImg = document.querySelector("main.has-results .detect-stage img");
+      if (resultsImg) {
+        resultsImg.addEventListener("load", fitResultsToViewport);
+        window.addEventListener("resize", fitResultsToViewport);
+        fitResultsToViewport();
       }
     </script>
   </body>
