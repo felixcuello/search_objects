@@ -44,3 +44,10 @@ def _register_cli(app: Flask) -> None:
         """Confirm the app must reach MySQL with SELECT 1."""
         db.session.execute(text("SELECT 1"))
         print("database ok")
+
+    @app.cli.command("seed")
+    def seed() -> None:
+        """Create sample products for every detector category (idempotent)."""
+        from app.seeds import seed_products
+
+        print(f"created {seed_products()} products")
