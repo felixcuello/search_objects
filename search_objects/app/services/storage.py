@@ -28,6 +28,11 @@ def upload_image(key: str, data: bytes, content_type: str) -> str:
     return public_url(key)
 
 
+def download_image(key: str) -> bytes:
+    """Read an image from the bucket and return its bytes."""
+    return _client().get_object(Bucket=os.environ["S3_BUCKET"], Key=key)["Body"].read()
+
+
 def delete_image(key: str) -> None:
     _client().delete_object(Bucket=os.environ["S3_BUCKET"], Key=key)
 

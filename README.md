@@ -67,6 +67,15 @@ The command reads the catalog's JSON API, downloads every photo of each product 
 Products are matched by provider and SKU (`products.external_sku`), so it is safe to re-run.
 The catalog URL can be overridden with the `BERCOMAT_BASE_URL` environment variable.
 
+### Replace an object in the photo
+
+Clicking "Reemplazar" on a search result sends the original photo, the product and the detector box to `POST /replace`.
+The server sends the original photo and the first photo of the product to the OpenAI image edit API.
+The prompt is the general prompt in `app/services/replacement.py`, plus the position of the box in the image, plus `products.replace_prompt`.
+The `replace_prompt` of each Bercomat product is written by `make db-import-bercomat` from `app/data/bercomat_products.json`.
+The image model can be changed with the `OPENAI_IMAGE_MODEL` environment variable.
+The result is not saved, and every replacement starts from the original photo.
+
 ### List products
 
 ```python

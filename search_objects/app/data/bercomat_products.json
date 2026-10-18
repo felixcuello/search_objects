@@ -1,6 +1,26 @@
 [
-  {"label": "alacena", "category_id": 675, "sku": "510511001"},
-  {"label": "espejo", "category_id": 554, "sku": "679846001"},
-  {"label": "termotanque", "category_id": 628, "sku": "515586001"},
-  {"label": "griferia cocina", "category_id": 544, "sku": "609572001"}
+  {
+    "label": "alacena",
+    "category_id": 675,
+    "sku": "510511001",
+    "replace_prompt": "- the product is a kitchen wall cabinet: it must hang on the wall, aligned in height with the cabinet it replaces and with its neighbors, with no contact with the floor and no visible support\n- keep the doors closed and the real proportions of the product photograph"
+  },
+  {
+    "label": "espejo",
+    "category_id": 554,
+    "sku": "679846001",
+    "replace_prompt": "- the product is a wall mirror with LED lighting: it must hang flat against the wall surface where the replaced object was\n- the mirror surface must reflect the room from the camera point of view; do not copy the reflection that appears in the product photograph\n- keep the frame and the LED light of the product photograph"
+  },
+  {
+    "label": "termotanque",
+    "category_id": 628,
+    "sku": "515586001",
+    "replace_prompt": "- the product is an electric water heater, a cylindrical tank: install it the same way as the replaced one (mounted on the wall or standing on the floor), always upright\n- keep the pipe connections of the product photograph at the top or bottom where they appear there\n- scale it to a realistic size for a 30 liter water heater"
+  },
+  {
+    "label": "griferia cocina",
+    "category_id": 544,
+    "sku": "609572001",
+    "replace_prompt": "- the product is a kitchen faucet: its base must sit flush on the countertop or sink edge at the same place as the replaced one, with the spout over the sink\n- scale it to a realistic faucet size (about 25 to 35 cm tall)"
+  }
 ]

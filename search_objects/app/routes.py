@@ -1,5 +1,7 @@
-from flask import Blueprint, current_app, jsonify, render_template, request
+from flask import Blueprint, Response, current_app, jsonify, render_template, request
+from sqlalchemy.orm import selectinload
 
+from app.models import Product
 from app.services.catalog import product_to_dict, search_products
 from app.services.detector import InvalidImageError, clamp_threshold, detect_objects, load_image
 from app.services.overlay import (
@@ -8,6 +10,7 @@ from app.services.overlay import (
     encode_jpeg_data_uri,
     overlay_objects,
 )
+from app.services.replacement import ReplacementError, replace_object_in_image
 
 bp = Blueprint("main", __name__)
 
@@ -81,6 +84,32 @@ def detect():
         image_width=image_width,
         image_height=image_height,
     )
+
+
+@bp.post("/replace")
+def replace():
+    """Replace a detected object of the uploaded image with a catalog product.
+
+    Returns the new image as PNG, or a JSON error with a message for the user.
+    """
+    uploaded = request.files.get("image")
+    product = (
+        Product.query.options(selectinload(Product.images))
+        .filter_by(uuid=request.form.get("product_uuid", ""))
+        .first()
+    )
+    box = {key: request.form.get(key, type=int) for key in ("xmin", "ymin", "xmax", "ymax")}
+    label = (request.form.get("label") or "").strip()
+    if uploaded is None or product is None or not label or None in box.values():
+        return jsonify({"error": "Faltan datos para reemplazar el objeto."}), 400
+
+    try:
+        png = replace_object_in_image(uploaded.read(), product, label, box)
+    except InvalidImageError:
+        return jsonify({"error": "La imagen no es válida o está dañada."}), 400
+    except ReplacementError as error:
+        return jsonify({"error": str(error)}), 502
+    return Response(png, mimetype="image/png")
 
 
 @bp.get("/object_search")

@@ -51,10 +51,13 @@ def get_or_create_provider() -> Provider:
     return provider
 
 
-def upsert_product(provider: Provider, catalog_product: dict) -> Product:
+def upsert_product(
+    provider: Provider, catalog_product: dict, replace_prompt: str | None = None
+) -> Product:
     """Create or update the local product that matches the catalog SKU for this provider.
 
     The description is the Spanish category name, so a search by object type finds it.
+    The replace_prompt is only written when given, so an existing prompt is never erased.
     """
     product = Product.query.filter_by(provider_id=provider.id, external_sku=catalog_product["sku"]).first()
     if product is None:
@@ -62,6 +65,8 @@ def upsert_product(provider: Provider, catalog_product: dict) -> Product:
         db.session.add(product)
     product.name = catalog_product["name"]
     product.description = catalog_product["category"]["name"]
+    if replace_prompt is not None:
+        product.replace_prompt = replace_prompt
     db.session.flush()
     return product
 
@@ -104,7 +109,7 @@ def import_bercomat_products() -> dict:
         if catalog_product is None:
             summary["missing_skus"].append(entry["sku"])
             continue
-        product = upsert_product(provider, catalog_product)
+        product = upsert_product(provider, catalog_product, entry.get("replace_prompt"))
         added, failed = import_images(product, catalog_product)
         db.session.commit()
         summary["products"] += 1

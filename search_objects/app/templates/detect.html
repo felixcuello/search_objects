@@ -143,20 +143,27 @@
         '<path d="M17 3l4 4-4 4"/><path d="M3 11V9a2 2 0 0 1 2-2h16"/>' +
         '<path d="M7 21l-4-4 4-4"/><path d="M21 13v2a2 2 0 0 1-2 2H3"/></svg>';
 
-      // The action buttons are visual only for now: they have no handlers on purpose.
-      function buildActionButton(className, icon, label) {
+      const SPINNER = '<span class="spinner" aria-hidden="true"></span>';
+
+      // The cart button has no handler on purpose: it is visual only for now.
+      function buildActionButton(className, icon, label, onClick = null) {
         const button = document.createElement("button");
         button.type = "button";
         button.className = `product-action ${className}`;
-        button.innerHTML = icon;
         const text = document.createElement("span");
         text.textContent = label;
+        button.dataset.icon = icon;
+        button.dataset.label = label;
+        button.innerHTML = icon;
         button.append(text);
+        if (onClick) {
+          button.addEventListener("click", () => onClick(button));
+        }
         return button;
       }
 
       // Catalog data is untrusted text, so it must only reach the page through textContent.
-      function buildProductItem(product) {
+      function buildProductItem(product, onReplace) {
         const item = document.createElement("li");
         item.className = "product-item";
 
@@ -189,7 +196,9 @@
         actions.className = "product-actions";
         actions.append(
           buildActionButton("is-primary", CART_ICON, "Agregar al carrito"),
-          buildActionButton("is-secondary", REPLACE_ICON, "Reemplazar"),
+          buildActionButton("is-secondary", REPLACE_ICON, "Reemplazar", (button) =>
+            onReplace(product, button),
+          ),
         );
         body.append(actions);
 
@@ -197,9 +206,102 @@
         return item;
       }
 
+      // Swaps the image of the stage between the original photo and the last replacement.
+      // The "Ver original" button only shows the original while it is held down.
+      function bindImageReplacement(panel) {
+        const stage = document.querySelector(".detect-stage");
+        const stageImage = stage.querySelector("img");
+        const originalSrc = stageImage.src;
+        let replacementUrl = null;
+
+        const busy = document.createElement("div");
+        busy.className = "stage-busy";
+        busy.hidden = true;
+        busy.setAttribute("role", "status");
+        const busyText = document.createElement("p");
+        busyText.textContent = "Reemplazando el objeto… puede tardar hasta un minuto.";
+        busy.innerHTML = SPINNER;
+        busy.append(busyText);
+
+        const compare = document.createElement("button");
+        compare.type = "button";
+        compare.className = "stage-compare";
+        compare.hidden = true;
+        compare.textContent = "Ver original";
+        const showOriginal = () => { stageImage.src = originalSrc; };
+        const showReplacement = () => { if (replacementUrl) { stageImage.src = replacementUrl; } };
+        compare.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          compare.setPointerCapture(event.pointerId);
+          showOriginal();
+        });
+        compare.addEventListener("pointerup", showReplacement);
+        compare.addEventListener("pointercancel", showReplacement);
+        compare.addEventListener("blur", showReplacement);
+        compare.addEventListener("contextmenu", (event) => event.preventDefault());
+        compare.addEventListener("keydown", (event) => {
+          if ((event.key === " " || event.key === "Enter") && !event.repeat) {
+            event.preventDefault();
+            showOriginal();
+          }
+        });
+        compare.addEventListener("keyup", (event) => {
+          if (event.key === " " || event.key === "Enter") {
+            showReplacement();
+          }
+        });
+        stage.append(busy, compare);
+
+        // Always starts from the original photo, so replacements never stack.
+        return async function replaceObject(product, target, button, status) {
+          const buttons = panel.querySelectorAll(".product-action");
+          buttons.forEach((each) => { each.disabled = true; });
+          button.innerHTML = SPINNER;
+          const label = document.createElement("span");
+          label.textContent = "Reemplazando…";
+          button.append(label);
+          busy.hidden = false;
+          status.className = "search-panel is-loading";
+          status.textContent = `Reemplazando por «${product.name}»…`;
+          try {
+            const form = new FormData();
+            form.append("image", await (await fetch(originalSrc)).blob(), "original.jpg");
+            form.append("product_uuid", product.uuid);
+            form.append("label", target.label);
+            Object.entries(target.box).forEach(([key, value]) => form.append(key, value));
+            const response = await fetch("/replace", { method: "POST", body: form });
+            if (!response.ok) {
+              const failure = await response.json().catch(() => ({}));
+              throw new Error(failure.error || "replace failed");
+            }
+            if (replacementUrl) {
+              URL.revokeObjectURL(replacementUrl);
+            }
+            replacementUrl = URL.createObjectURL(await response.blob());
+            showReplacement();
+            compare.hidden = false;
+            status.className = "search-panel";
+            status.textContent = `Objeto reemplazado por «${product.name}».`;
+          } catch (error) {
+            status.className = "search-panel is-error";
+            status.textContent = error.message === "replace failed" || error instanceof TypeError
+              ? "No pudimos reemplazar el objeto. Intente nuevamente."
+              : error.message;
+          } finally {
+            busy.hidden = true;
+            buttons.forEach((each) => { each.disabled = false; });
+            button.innerHTML = button.dataset.icon;
+            const restored = document.createElement("span");
+            restored.textContent = button.dataset.label;
+            button.append(restored);
+          }
+        };
+      }
+
       function bindObjectSearch(root, panel) {
         const status = panel.querySelector("[data-search-status]");
         const list = panel.querySelector("[data-product-list]");
+        const replaceObject = bindImageReplacement(panel);
         let latestSearch = 0;
         root.addEventListener("click", async (event) => {
           const link = event.target.closest("a[href*='/object_search']");
@@ -207,6 +309,14 @@
             return;
           }
           event.preventDefault();
+          // The detector box travels in the link, so replacing knows which object was clicked.
+          const params = new URL(link.href).searchParams;
+          const target = {
+            label: params.get("q") || "",
+            box: Object.fromEntries(
+              ["xmin", "ymin", "xmax", "ymax"].map((key) => [key, params.get(key)]),
+            ),
+          };
           // A slow answer to an older click must not overwrite the answer to a newer one.
           const thisSearch = ++latestSearch;
           list.replaceChildren();
@@ -231,7 +341,13 @@
             }
             status.className = "search-panel";
             status.textContent = `${data.results.length} resultado(s) para «${query}»`;
-            list.replaceChildren(...data.results.map(buildProductItem));
+            list.replaceChildren(
+              ...data.results.map((product) =>
+                buildProductItem(product, (chosen, button) =>
+                  replaceObject(chosen, target, button, status),
+                ),
+              ),
+            );
           } catch {
             if (thisSearch !== latestSearch) {
               return;

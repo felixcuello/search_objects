@@ -16,5 +16,6 @@ def mysql_database_uri() -> str:
 class Config:
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024
     DEFAULT_THRESHOLD = 0.3
+    OPENAI_IMAGE_MODEL = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-2.5-sunburst")
     SQLALCHEMY_DATABASE_URI = mysql_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
