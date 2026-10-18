@@ -212,7 +212,11 @@
         const stage = document.querySelector(".detect-stage");
         const stageImage = stage.querySelector("img");
         const originalSrc = stageImage.src;
+        // The detector boxes are in pixels of the original photo, whatever image is sent.
+        const originalWidth = stageImage.getAttribute("width");
+        const originalHeight = stageImage.getAttribute("height");
         let replacementUrl = null;
+        let latestBlob = null;
 
         const busy = document.createElement("div");
         busy.className = "stage-busy";
@@ -252,7 +256,8 @@
         });
         stage.append(busy, compare);
 
-        // Always starts from the original photo, so replacements never stack.
+        // Each replacement starts from the latest result, so changes stack. The first one starts
+        // from the original photo.
         return async function replaceObject(product, target, button, status) {
           const buttons = panel.querySelectorAll(".product-action");
           buttons.forEach((each) => { each.disabled = true; });
@@ -265,7 +270,10 @@
           status.textContent = `Reemplazando por «${product.name}»…`;
           try {
             const form = new FormData();
-            form.append("image", await (await fetch(originalSrc)).blob(), "original.jpg");
+            const input = latestBlob || (await (await fetch(originalSrc)).blob());
+            form.append("image", input, "image");
+            form.append("image_width", originalWidth);
+            form.append("image_height", originalHeight);
             form.append("product_uuid", product.uuid);
             form.append("label", target.label);
             Object.entries(target.box).forEach(([key, value]) => form.append(key, value));
@@ -277,7 +285,8 @@
             if (replacementUrl) {
               URL.revokeObjectURL(replacementUrl);
             }
-            replacementUrl = URL.createObjectURL(await response.blob());
+            latestBlob = await response.blob();
+            replacementUrl = URL.createObjectURL(latestBlob);
             showReplacement();
             compare.hidden = false;
             status.className = "search-panel";

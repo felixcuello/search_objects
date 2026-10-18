@@ -100,11 +100,15 @@ def replace():
     )
     box = {key: request.form.get(key, type=int) for key in ("xmin", "ymin", "xmax", "ymax")}
     label = (request.form.get("label") or "").strip()
+    # Size of the photo the box belongs to; it differs from the sent image when replacing again.
+    box_width = request.form.get("image_width", type=int)
+    box_height = request.form.get("image_height", type=int)
+    box_image_size = (box_width, box_height) if box_width and box_height else None
     if uploaded is None or product is None or not label or None in box.values():
         return jsonify({"error": "Faltan datos para reemplazar el objeto."}), 400
 
     try:
-        png = replace_object_in_image(uploaded.read(), product, label, box)
+        png = replace_object_in_image(uploaded.read(), product, label, box, box_image_size)
     except InvalidImageError:
         return jsonify({"error": "La imagen no es válida o está dañada."}), 400
     except ReplacementError as error:

@@ -1,9 +1,11 @@
 import base64
+import io
 import mimetypes
 from functools import lru_cache
 
 from flask import current_app
 from openai import OpenAI, OpenAIError
+from PIL import Image
 
 from app.models import Product
 from app.services.detector import FURNITURE_LABELS, load_image
@@ -79,11 +81,26 @@ def build_replace_prompt(target: str, position: str, product_notes: str | None) 
     return GENERAL_PROMPT.format(target=target, position=position, product_notes=notes)
 
 
+def _image_file_for_upload(data: bytes) -> tuple[str, bytes, str]:
+    # The input can be the uploaded JPEG or a PNG result of an earlier replacement.
+    with Image.open(io.BytesIO(data)) as image:
+        content_type = Image.MIME.get(image.format, "image/jpeg")
+    extension = mimetypes.guess_extension(content_type) or ".jpg"
+    return (f"image{extension}", data, content_type)
+
+
 def replace_object_in_image(
-    original_bytes: bytes, product: Product, label: str, box: dict
+    original_bytes: bytes,
+    product: Product,
+    label: str,
+    box: dict,
+    box_image_size: tuple[int, int] | None = None,
 ) -> bytes:
     """Replace the detected object with the product's first photo and return the PNG bytes.
 
+    The box is in pixels of an image of box_image_size (the photo the detector saw). When the
+    input is an earlier result, that size differs from the input, so the position is computed
+    from box_image_size. It defaults to the size of the input image.
     Raises ReplacementError when the product has no photo or the image model fails.
     """
     photos = sorted(product.images, key=lambda image: image.id)
@@ -95,14 +112,14 @@ def replace_object_in_image(
     original = load_image(original_bytes)
     prompt = build_replace_prompt(
         target=_ENGLISH_BY_SPANISH_LABEL.get(label, label),
-        position=describe_position(box, *original.size),
+        position=describe_position(box, *(box_image_size or original.size)),
         product_notes=product.replace_prompt,
     )
     try:
         response = _openai_client().images.edit(
             model=current_app.config["OPENAI_IMAGE_MODEL"],
             image=[
-                ("original.jpg", original_bytes, "image/jpeg"),
+                _image_file_for_upload(original_bytes),
                 (photo_key.rsplit("/", 1)[-1], download_image(photo_key), photo_type),
             ],
             prompt=prompt,
