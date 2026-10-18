@@ -59,6 +59,14 @@ Anyone can read an object by URL, but only the app key can write.
 The `images.uri` column stores the object key, and `storage.public_url(key)` builds the URL from `S3_PUBLIC_URL`.
 The admin console is at http://localhost:9001 (log in with `S3_ROOT_USER` / `S3_ROOT_PASSWORD`).
 
+### Import the Bercomat catalog
+
+`make db-import-bercomat` imports the products listed in `search_objects/app/data/bercomat_products.json`.
+Each entry has the detector label, the category id and the SKU of a product in the Bercomat catalog.
+The command reads the catalog's JSON API, downloads every photo of each product into the bucket, and registers them in `images`.
+Products are matched by provider and SKU (`products.external_sku`), so it is safe to re-run.
+The catalog URL can be overridden with the `BERCOMAT_BASE_URL` environment variable.
+
 ### List products
 
 ```python

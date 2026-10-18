@@ -96,6 +96,7 @@
       {% if image_src %}
         <aside class="side-column" data-search-panel>
           <p class="search-panel" data-search-status></p>
+          <ul class="product-list" data-product-list></ul>
         </aside>
       {% endif %}
     </main>
@@ -130,14 +131,85 @@
         return event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
       }
 
+      // Static markup only (no catalog data), so it is safe to set as HTML.
+      const CART_ICON =
+        '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/>' +
+        '<path d="M3 4h2.5l2.3 11h10.2l2-8H6.4"/></svg>';
+      const REPLACE_ICON =
+        '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M17 3l4 4-4 4"/><path d="M3 11V9a2 2 0 0 1 2-2h16"/>' +
+        '<path d="M7 21l-4-4 4-4"/><path d="M21 13v2a2 2 0 0 1-2 2H3"/></svg>';
+
+      // The action buttons are visual only for now: they have no handlers on purpose.
+      function buildActionButton(className, icon, label) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `product-action ${className}`;
+        button.innerHTML = icon;
+        const text = document.createElement("span");
+        text.textContent = label;
+        button.append(text);
+        return button;
+      }
+
+      // Catalog data is untrusted text, so it must only reach the page through textContent.
+      function buildProductItem(product) {
+        const item = document.createElement("li");
+        item.className = "product-item";
+
+        const photo = document.createElement("div");
+        photo.className = "product-photo";
+        if (product.images.length > 0) {
+          const image = document.createElement("img");
+          image.src = product.images[0];
+          image.alt = product.name;
+          image.loading = "lazy";
+          photo.append(image);
+        } else {
+          photo.classList.add("is-missing");
+          photo.textContent = "Sin imagen";
+        }
+
+        const body = document.createElement("div");
+        body.className = "product-body";
+        const name = document.createElement("h3");
+        name.className = "product-name";
+        name.textContent = product.name;
+        body.append(name);
+        if (product.description) {
+          const description = document.createElement("p");
+          description.className = "product-description";
+          description.textContent = product.description;
+          body.append(description);
+        }
+        const actions = document.createElement("div");
+        actions.className = "product-actions";
+        actions.append(
+          buildActionButton("is-primary", CART_ICON, "Agregar al carrito"),
+          buildActionButton("is-secondary", REPLACE_ICON, "Reemplazar"),
+        );
+        body.append(actions);
+
+        item.append(photo, body);
+        return item;
+      }
+
       function bindObjectSearch(root, panel) {
         const status = panel.querySelector("[data-search-status]");
+        const list = panel.querySelector("[data-product-list]");
+        let latestSearch = 0;
         root.addEventListener("click", async (event) => {
           const link = event.target.closest("a[href*='/object_search']");
           if (!link || !root.contains(link) || isModifiedClick(event)) {
             return;
           }
           event.preventDefault();
+          // A slow answer to an older click must not overwrite the answer to a newer one.
+          const thisSearch = ++latestSearch;
+          list.replaceChildren();
           status.className = "search-panel is-loading";
           status.textContent = "Buscando objetos similares…";
           try {
@@ -146,12 +218,24 @@
               throw new Error("search failed");
             }
             const data = await response.json();
+            if (thisSearch !== latestSearch) {
+              return;
+            }
             const query = data.query || "";
-            status.className = "search-panel is-empty";
-            status.textContent = query
-              ? `No hay resultados de catálogo para «${query}» todavía.`
-              : "No hay resultados de catálogo todavía.";
+            if (data.results.length === 0) {
+              status.className = "search-panel is-empty";
+              status.textContent = query
+                ? `No hay resultados de catálogo para «${query}».`
+                : "No hay resultados de catálogo.";
+              return;
+            }
+            status.className = "search-panel";
+            status.textContent = `${data.results.length} resultado(s) para «${query}»`;
+            list.replaceChildren(...data.results.map(buildProductItem));
           } catch {
+            if (thisSearch !== latestSearch) {
+              return;
+            }
             status.className = "search-panel is-error";
             status.textContent = "No pudimos completar la búsqueda. Intente nuevamente.";
           }

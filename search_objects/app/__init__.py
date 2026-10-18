@@ -51,3 +51,17 @@ def _register_cli(app: Flask) -> None:
         from app.seeds import seed_products
 
         print(f"created {seed_products()} products")
+
+    @app.cli.command("import-bercomat")
+    def import_bercomat() -> None:
+        """Import the curated Bercomat catalog products and their photos (idempotent)."""
+        from app.services.bercomat import import_bercomat_products
+
+        summary = import_bercomat_products()
+        print(f"imported {summary['products']} products and {summary['images']} new photos")
+        if summary["missing_skus"]:
+            print(f"SKUs not found in the catalog: {', '.join(summary['missing_skus'])}")
+        if summary["failed_images"]:
+            print(f"photos that failed to download: {', '.join(summary['failed_images'])}")
+        if summary["missing_skus"] or summary["failed_images"]:
+            raise SystemExit(1)

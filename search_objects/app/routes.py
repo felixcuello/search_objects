@@ -1,5 +1,6 @@
 from flask import Blueprint, current_app, jsonify, render_template, request
 
+from app.services.catalog import product_to_dict, search_products
 from app.services.detector import InvalidImageError, clamp_threshold, detect_objects, load_image
 from app.services.overlay import (
     assign_display_names,
@@ -84,7 +85,10 @@ def detect():
 
 @bp.get("/object_search")
 def object_search():
-    """Return catalog hits for a selected detection. Catalog lookup is later."""
+    """Return the catalog products that match the label of a selected detection.
+
+    The box is echoed back for the later replace step; the search only uses the label.
+    """
     query = (request.args.get("q") or "").strip()
     box = {
         "xmin": request.args.get("xmin", type=int),
@@ -92,5 +96,6 @@ def object_search():
         "xmax": request.args.get("xmax", type=int),
         "ymax": request.args.get("ymax", type=int),
     }
-    return jsonify({"query": query, "box": box, "results": []})
+    results = [product_to_dict(product) for product in search_products(query)]
+    return jsonify({"query": query, "box": box, "results": results})
 

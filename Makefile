@@ -13,6 +13,7 @@ all:
 	@echo " make db-generate               # Autogenerate a migration (MSG='...')"
 	@echo " make db-ping                   # SELECT 1 against MySQL"
 	@echo " make db-seed                   # Seed the database"
+	@echo " make db-import-bercomat        # Import the curated Bercomat products and photos"
 	@echo ""
 
 build:
@@ -28,10 +29,10 @@ stop:
 	@docker compose stop
 
 db-drop:
-	@docker compose run -T db sh -c 'mysql -uroot -p"$$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $$MYSQL_DATABASE"'
+	@docker compose run --rm -T db sh -c 'mysql -h db -uroot -p"$$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $$MYSQL_DATABASE"'
 
 db-create:
-	@docker compose run -T db sh -c 'mysql -uroot -p"$$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $$MYSQL_DATABASE CHARACTER SET utf8mb4"'
+	@docker compose run --rm -T db sh -c 'mysql -h db -uroot -p"$$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $$MYSQL_DATABASE CHARACTER SET utf8mb4"'
 
 db-migrate:
 	@docker compose run --rm web flask db upgrade
@@ -44,3 +45,6 @@ db-ping:
 
 db-seed:
 	@docker compose run --rm web flask seed
+
+db-import-bercomat:
+	@docker compose run --rm web flask import-bercomat
