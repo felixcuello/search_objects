@@ -48,7 +48,7 @@
       {% if image_src %}
         <section class="results" data-hover-sync>
           <div class="media-block">
-          <div class="detect-stage">
+          <div class="detect-stage" style="--aspect: {{ '%.4f'|format(image_width / image_height) }};">
             <img
               src="{{ image_src }}"
               width="{{ image_width }}"

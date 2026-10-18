@@ -25,6 +25,10 @@ FURNITURE_LABELS = {
     "window": "ventana",
     "door": "puerta",
     "water heater": "termotanque",
+    "floor": "piso",
+    "wooden floor": "piso de madera",
+    "tile": "ceramico",
+    "tiles": "ceramicos",
 }
 
 _inference_lock = threading.Lock()

@@ -208,9 +208,12 @@ button:disabled {
   object-fit: contain;
 }
 
+/* The stage is as wide as the image will be, so the percent boxes stay on top of it.
+   Width is the smallest of: the column, half of the viewport, and the width that makes the
+   image 60% of the viewport high (--aspect is the image width divided by its height). */
 .has-results .detect-stage {
   flex: 0 0 auto;
-  width: 100%;
+  width: min(100%, 50vw, calc(60vh * var(--aspect, 1.5)));
   max-width: 100%;
 }
 
@@ -516,6 +519,10 @@ button:disabled {
 @media (max-width: 900px) {
   main.has-results {
     grid-template-columns: 1fr;
+  }
+
+  .has-results .detect-stage {
+    width: min(100%, calc(60vh * var(--aspect, 1.5)));
   }
 
   .has-results .side-column {
