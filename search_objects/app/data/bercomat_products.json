@@ -22,5 +22,55 @@
     "category_id": 544,
     "sku": "609572001",
     "replace_prompt": "- the product is a kitchen faucet: its base must sit flush on the countertop or sink edge at the same place as the replaced one, with the spout over the sink\n- scale it to a realistic faucet size (about 25 to 35 cm tall)"
+  },
+  {
+    "label": "piso",
+    "category_id": 499,
+    "sku": "680430001",
+    "replace_prompt": "- the product is a plain grey floor tile of 46 x 46 cm, with thin grout lines; a tile must look about 46 cm wide in the room\n- replace the whole visible floor surface, laying the pieces in a regular layout that follows the perspective lines of the room\n- keep furniture, rugs and every object standing on the floor, with their shadows adapted to the new surface\n- do not turn walls, baseboards or doors into floor"
+  },
+  {
+    "label": "piso / ceramicos",
+    "sku": "682503001",
+    "description": "Ceramicos",
+    "replace_prompt": "- the product is a large rectangular grey floor and wall tile of 61 x 122 cm, rectified, with very thin grout lines; a tile must look about 61 by 122 cm in the room\n- replace the whole visible floor surface, laying the pieces in a regular layout that follows the perspective lines of the room\n- keep furniture, rugs and every object standing on the floor, with their shadows adapted to the new surface\n- do not turn walls, baseboards or doors into floor"
+  },
+  {
+    "label": "piso",
+    "category_id": 489,
+    "sku": "680341001",
+    "replace_prompt": "- the product is a rustic floor tile of 36 x 36 cm with a relief texture; a tile must look about 36 cm wide in the room\n- replace the whole visible floor surface, laying the pieces in a regular layout that follows the perspective lines of the room\n- keep furniture, rugs and every object standing on the floor, with their shadows adapted to the new surface\n- do not turn walls, baseboards or doors into floor"
+  },
+  {
+    "label": "ceramicos",
+    "sku": "682504001",
+    "description": "Ceramicos",
+    "replace_prompt": "- the product is a large rectangular white floor and wall tile of 61 x 122 cm, rectified, with very thin grout lines; a tile must look about 61 by 122 cm in the room\n- replace the whole visible floor surface, laying the pieces in a regular layout that follows the perspective lines of the room\n- keep furniture, rugs and every object standing on the floor, with their shadows adapted to the new surface\n- do not turn walls, baseboards or doors into floor"
+  },
+  {
+    "label": "piso madera",
+    "sku": "682044001",
+    "description": "Piso de madera (porcelanato simil madera)",
+    "replace_prompt": "- the product is a wood-look porcelain plank of 20 x 80 cm; keep its wood grain and color, with thin grout lines\n- lay the planks lengthwise along the longest direction of the room, in a staggered pattern, so a plank looks about 20 by 80 cm\n- replace the whole visible floor surface, following the perspective lines of the room\n- keep furniture, rugs and every object standing on the floor, with their shadows adapted to the new surface\n- do not turn walls, baseboards or doors into floor"
+  },
+  {
+    "label": "picaporte",
+    "category_id": 394,
+    "sku": "605309001",
+    "description": "Picaporte",
+    "replace_prompt": "- the product is a door handle (picaporte): it must replace the existing handle on the door at the same position and height, on the lock side of the door leaf\n- keep its rosette or plate as in the product photograph and scale it to a realistic size (about 12 to 16 cm long)\n- do not change the door itself"
+  },
+  {
+    "label": "picaporte",
+    "category_id": 394,
+    "sku": "605320001",
+    "description": "Picaporte",
+    "replace_prompt": "- the product is a double lever door handle (picaporte) in a bronze finish: it must replace the existing handle on the door at the same position and height, on the lock side of the door leaf\n- keep its shape and finish as in the product photograph and scale it to a realistic size (about 12 to 16 cm long)\n- do not change the door itself"
+  },
+  {
+    "label": "griferia",
+    "category_id": 536,
+    "sku": "511990001",
+    "replace_prompt": "- the product is a low single-lever bathroom washbasin faucet: its base must sit flush on the basin or vanity top at the same place as the replaced one, with the spout over the basin\n- scale it to a realistic faucet size (about 12 to 18 cm tall)"
   }
 ]

@@ -29,6 +29,7 @@ FURNITURE_LABELS = {
     "wooden floor": "piso de madera",
     "tile": "ceramico",
     "tiles": "ceramicos",
+    "doorknob": "picaporte",
 }
 
 _inference_lock = threading.Lock()

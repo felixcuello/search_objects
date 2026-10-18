@@ -66,6 +66,9 @@ Each entry has the detector label, the category id and the SKU of a product in t
 The command reads the catalog's JSON API, downloads every photo of each product into the bucket, and registers them in `images`.
 Products are matched by provider and SKU (`products.external_sku`), so it is safe to re-run.
 The catalog URL can be overridden with the `BERCOMAT_BASE_URL` environment variable.
+Each entry may carry a `description` (it replaces the category name, which some products lack) and a `replace_prompt`.
+A product is looked up in its category first, then in the product detail endpoint, then in the catalog search suggestions.
+The suggestions only show products for a postal code, set with `BERCOMAT_POSTAL_CODE` (default `3400`).
 
 ### Replace an object in the photo
 
