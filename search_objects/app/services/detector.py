@@ -26,7 +26,7 @@ FURNITURE_LABELS = {
     "door": "puerta",
     "water heater": "termotanque",
     "floor": "piso",
-    "wooden floor": "piso de madera",
+    "wooden floor": "piso",
     "tile": "ceramico",
     "tiles": "ceramicos",
     "doorknob": "picaporte",

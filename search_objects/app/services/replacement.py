@@ -42,7 +42,11 @@ Photorealistic photograph. Change only the insertion of the product.
 """
 
 # Detector labels are English prompts, but the page sends the Spanish label back.
-_ENGLISH_BY_SPANISH_LABEL = {spanish: english for english, spanish in FURNITURE_LABELS.items()}
+# Several prompts can share one Spanish label ("floor" and "wooden floor" are both "piso"), so the
+# first one listed must be the most generic: it is the noun used in the replace prompt.
+_ENGLISH_BY_SPANISH_LABEL: dict[str, str] = {}
+for _english, _spanish in FURNITURE_LABELS.items():
+    _ENGLISH_BY_SPANISH_LABEL.setdefault(_spanish, _english)
 
 
 class ReplacementError(RuntimeError):

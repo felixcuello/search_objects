@@ -124,6 +124,12 @@
       form.addEventListener("submit", () => {
         window.removeEventListener("beforeunload", warnOnLeave);
         button.disabled = true;
+        // Spinner next to the label, so it is clear the upload is being processed.
+        const spinner = document.createElement("span");
+        spinner.className = "spinner";
+        spinner.setAttribute("aria-hidden", "true");
+        button.classList.add("is-busy");
+        button.replaceChildren(spinner, "Procesando...");
         busyMessage.hidden = false;
       });
 
@@ -291,11 +297,13 @@
             compare.hidden = false;
             status.className = "search-panel";
             status.textContent = `Objeto reemplazado por «${product.name}».`;
+            return true;
           } catch (error) {
             status.className = "search-panel is-error";
             status.textContent = error.message === "replace failed" || error instanceof TypeError
               ? "No pudimos reemplazar el objeto. Intente nuevamente."
               : error.message;
+            return false;
           } finally {
             busy.hidden = true;
             buttons.forEach((each) => { each.disabled = false; });
@@ -312,12 +320,25 @@
         const list = panel.querySelector("[data-product-list]");
         const replaceObject = bindImageReplacement(panel);
         let latestSearch = 0;
+
+        // The clicked object (its box and its legend cell) stays highlighted until another object
+        // is clicked or a replacement succeeds.
+        function clearSelected() {
+          root.querySelectorAll(".is-selected").forEach((node) => node.classList.remove("is-selected"));
+        }
+        function markSelected(objectId) {
+          clearSelected();
+          root.querySelectorAll("[data-object-id]").forEach((node) => {
+            node.classList.toggle("is-selected", node.dataset.objectId === objectId);
+          });
+        }
         root.addEventListener("click", async (event) => {
           const link = event.target.closest("a[href*='/object_search']");
           if (!link || !root.contains(link) || isModifiedClick(event)) {
             return;
           }
           event.preventDefault();
+          markSelected(link.dataset.objectId);
           // The detector box travels in the link, so replacing knows which object was clicked.
           const params = new URL(link.href).searchParams;
           const target = {
@@ -352,9 +373,11 @@
             status.textContent = `${data.results.length} resultado(s) para «${query}»`;
             list.replaceChildren(
               ...data.results.map((product) =>
-                buildProductItem(product, (chosen, button) =>
-                  replaceObject(chosen, target, button, status),
-                ),
+                buildProductItem(product, async (chosen, button) => {
+                  if (await replaceObject(chosen, target, button, status)) {
+                    clearSelected();
+                  }
+                }),
               ),
             );
           } catch {
