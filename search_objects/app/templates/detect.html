@@ -48,7 +48,7 @@
       {% if image_src %}
         <section class="results" data-hover-sync>
           <div class="media-block">
-          <div class="detect-stage">
+          <div class="detect-stage" style="--aspect: {{ '%.4f'|format(image_width / image_height) }};">
             <img
               src="{{ image_src }}"
               width="{{ image_width }}"
@@ -96,6 +96,7 @@
       {% if image_src %}
         <aside class="side-column" data-search-panel>
           <p class="search-panel" data-search-status></p>
+          <ul class="product-list" data-product-list></ul>
         </aside>
       {% endif %}
     </main>
@@ -123,6 +124,12 @@
       form.addEventListener("submit", () => {
         window.removeEventListener("beforeunload", warnOnLeave);
         button.disabled = true;
+        // Spinner next to the label, so it is clear the upload is being processed.
+        const spinner = document.createElement("span");
+        spinner.className = "spinner";
+        spinner.setAttribute("aria-hidden", "true");
+        button.classList.add("is-busy");
+        button.replaceChildren(spinner, "Procesando...");
         busyMessage.hidden = false;
       });
 
@@ -130,14 +137,219 @@
         return event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
       }
 
+      // Static markup only (no catalog data), so it is safe to set as HTML.
+      const CART_ICON =
+        '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/>' +
+        '<path d="M3 4h2.5l2.3 11h10.2l2-8H6.4"/></svg>';
+      const REPLACE_ICON =
+        '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M17 3l4 4-4 4"/><path d="M3 11V9a2 2 0 0 1 2-2h16"/>' +
+        '<path d="M7 21l-4-4 4-4"/><path d="M21 13v2a2 2 0 0 1-2 2H3"/></svg>';
+
+      const SPINNER = '<span class="spinner" aria-hidden="true"></span>';
+
+      // The cart button has no handler on purpose: it is visual only for now.
+      function buildActionButton(className, icon, label, onClick = null) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `product-action ${className}`;
+        const text = document.createElement("span");
+        text.textContent = label;
+        button.dataset.icon = icon;
+        button.dataset.label = label;
+        button.innerHTML = icon;
+        button.append(text);
+        if (onClick) {
+          button.addEventListener("click", () => onClick(button));
+        }
+        return button;
+      }
+
+      // Catalog data is untrusted text, so it must only reach the page through textContent.
+      function buildProductItem(product, onReplace) {
+        const item = document.createElement("li");
+        item.className = "product-item";
+
+        const photo = document.createElement("div");
+        photo.className = "product-photo";
+        if (product.images.length > 0) {
+          const image = document.createElement("img");
+          image.src = product.images[0];
+          image.alt = product.name;
+          image.loading = "lazy";
+          photo.append(image);
+        } else {
+          photo.classList.add("is-missing");
+          photo.textContent = "Sin imagen";
+        }
+
+        const body = document.createElement("div");
+        body.className = "product-body";
+        const name = document.createElement("h3");
+        name.className = "product-name";
+        name.textContent = product.name;
+        body.append(name);
+        if (product.description) {
+          const description = document.createElement("p");
+          description.className = "product-description";
+          description.textContent = product.description;
+          body.append(description);
+        }
+        const actions = document.createElement("div");
+        actions.className = "product-actions";
+        actions.append(
+          buildActionButton("is-primary", CART_ICON, "Agregar al carrito"),
+          buildActionButton("is-secondary", REPLACE_ICON, "Reemplazar", (button) =>
+            onReplace(product, button),
+          ),
+        );
+        body.append(actions);
+
+        item.append(photo, body);
+        return item;
+      }
+
+      // Swaps the image of the stage between the original photo and the last replacement.
+      // The "Ver original" button only shows the original while it is held down.
+      function bindImageReplacement(panel) {
+        const stage = document.querySelector(".detect-stage");
+        const stageImage = stage.querySelector("img");
+        const originalSrc = stageImage.src;
+        // The detector boxes are in pixels of the original photo, whatever image is sent.
+        const originalWidth = stageImage.getAttribute("width");
+        const originalHeight = stageImage.getAttribute("height");
+        let replacementUrl = null;
+        let latestBlob = null;
+
+        const busy = document.createElement("div");
+        busy.className = "stage-busy";
+        busy.hidden = true;
+        busy.setAttribute("role", "status");
+        const busyText = document.createElement("p");
+        busyText.textContent = "Reemplazando el objeto… puede tardar hasta un minuto.";
+        busy.innerHTML = SPINNER;
+        busy.append(busyText);
+
+        const compare = document.createElement("button");
+        compare.type = "button";
+        compare.className = "stage-compare";
+        compare.hidden = true;
+        compare.textContent = "Ver original";
+        const showOriginal = () => { stageImage.src = originalSrc; };
+        const showReplacement = () => { if (replacementUrl) { stageImage.src = replacementUrl; } };
+        compare.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          compare.setPointerCapture(event.pointerId);
+          showOriginal();
+        });
+        compare.addEventListener("pointerup", showReplacement);
+        compare.addEventListener("pointercancel", showReplacement);
+        compare.addEventListener("blur", showReplacement);
+        compare.addEventListener("contextmenu", (event) => event.preventDefault());
+        compare.addEventListener("keydown", (event) => {
+          if ((event.key === " " || event.key === "Enter") && !event.repeat) {
+            event.preventDefault();
+            showOriginal();
+          }
+        });
+        compare.addEventListener("keyup", (event) => {
+          if (event.key === " " || event.key === "Enter") {
+            showReplacement();
+          }
+        });
+        stage.append(busy, compare);
+
+        // Each replacement starts from the latest result, so changes stack. The first one starts
+        // from the original photo.
+        return async function replaceObject(product, target, button, status) {
+          const buttons = panel.querySelectorAll(".product-action");
+          buttons.forEach((each) => { each.disabled = true; });
+          button.innerHTML = SPINNER;
+          const label = document.createElement("span");
+          label.textContent = "Reemplazando…";
+          button.append(label);
+          busy.hidden = false;
+          status.className = "search-panel is-loading";
+          status.textContent = `Reemplazando por «${product.name}»…`;
+          try {
+            const form = new FormData();
+            const input = latestBlob || (await (await fetch(originalSrc)).blob());
+            form.append("image", input, "image");
+            form.append("image_width", originalWidth);
+            form.append("image_height", originalHeight);
+            form.append("product_uuid", product.uuid);
+            form.append("label", target.label);
+            Object.entries(target.box).forEach(([key, value]) => form.append(key, value));
+            const response = await fetch("/replace", { method: "POST", body: form });
+            if (!response.ok) {
+              const failure = await response.json().catch(() => ({}));
+              throw new Error(failure.error || "replace failed");
+            }
+            if (replacementUrl) {
+              URL.revokeObjectURL(replacementUrl);
+            }
+            latestBlob = await response.blob();
+            replacementUrl = URL.createObjectURL(latestBlob);
+            showReplacement();
+            compare.hidden = false;
+            status.className = "search-panel";
+            status.textContent = `Objeto reemplazado por «${product.name}».`;
+            return true;
+          } catch (error) {
+            status.className = "search-panel is-error";
+            status.textContent = error.message === "replace failed" || error instanceof TypeError
+              ? "No pudimos reemplazar el objeto. Intente nuevamente."
+              : error.message;
+            return false;
+          } finally {
+            busy.hidden = true;
+            buttons.forEach((each) => { each.disabled = false; });
+            button.innerHTML = button.dataset.icon;
+            const restored = document.createElement("span");
+            restored.textContent = button.dataset.label;
+            button.append(restored);
+          }
+        };
+      }
+
       function bindObjectSearch(root, panel) {
         const status = panel.querySelector("[data-search-status]");
+        const list = panel.querySelector("[data-product-list]");
+        const replaceObject = bindImageReplacement(panel);
+        let latestSearch = 0;
+
+        // The clicked object (its box and its legend cell) stays highlighted until another object
+        // is clicked or a replacement succeeds.
+        function clearSelected() {
+          root.querySelectorAll(".is-selected").forEach((node) => node.classList.remove("is-selected"));
+        }
+        function markSelected(objectId) {
+          clearSelected();
+          root.querySelectorAll("[data-object-id]").forEach((node) => {
+            node.classList.toggle("is-selected", node.dataset.objectId === objectId);
+          });
+        }
         root.addEventListener("click", async (event) => {
           const link = event.target.closest("a[href*='/object_search']");
           if (!link || !root.contains(link) || isModifiedClick(event)) {
             return;
           }
           event.preventDefault();
+          markSelected(link.dataset.objectId);
+          // The detector box travels in the link, so replacing knows which object was clicked.
+          const params = new URL(link.href).searchParams;
+          const target = {
+            label: params.get("q") || "",
+            box: Object.fromEntries(
+              ["xmin", "ymin", "xmax", "ymax"].map((key) => [key, params.get(key)]),
+            ),
+          };
+          // A slow answer to an older click must not overwrite the answer to a newer one.
+          const thisSearch = ++latestSearch;
+          list.replaceChildren();
           status.className = "search-panel is-loading";
           status.textContent = "Buscando objetos similares…";
           try {
@@ -146,12 +358,32 @@
               throw new Error("search failed");
             }
             const data = await response.json();
+            if (thisSearch !== latestSearch) {
+              return;
+            }
             const query = data.query || "";
-            status.className = "search-panel is-empty";
-            status.textContent = query
-              ? `No hay resultados de catálogo para «${query}» todavía.`
-              : "No hay resultados de catálogo todavía.";
+            if (data.results.length === 0) {
+              status.className = "search-panel is-empty";
+              status.textContent = query
+                ? `No hay resultados de catálogo para «${query}».`
+                : "No hay resultados de catálogo.";
+              return;
+            }
+            status.className = "search-panel";
+            status.textContent = `${data.results.length} resultado(s) para «${query}»`;
+            list.replaceChildren(
+              ...data.results.map((product) =>
+                buildProductItem(product, async (chosen, button) => {
+                  if (await replaceObject(chosen, target, button, status)) {
+                    clearSelected();
+                  }
+                }),
+              ),
+            );
           } catch {
+            if (thisSearch !== latestSearch) {
+              return;
+            }
             status.className = "search-panel is-error";
             status.textContent = "No pudimos completar la búsqueda. Intente nuevamente.";
           }
