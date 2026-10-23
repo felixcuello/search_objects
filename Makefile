@@ -7,6 +7,7 @@ all:
 	@echo " make build                     # Build the containers"
 	@echo " make shell                     # Enter the shell on the main container"
 	@echo " make run                       # Run the app [foreground]"
+	@echo " make up                        # Start all services [detached]"
 	@echo " make db-drop                   # Drop the database [destroys all data]"
 	@echo " make db-create                 # Create the (empty) database"
 	@echo " make db-migrate                # Apply pending migrations (rails db:migrate)"
@@ -24,6 +25,9 @@ shell:
 
 run:
 	@docker compose run --service-ports --rm web
+
+up:
+	@docker compose up -d
 
 stop:
 	@docker compose stop
