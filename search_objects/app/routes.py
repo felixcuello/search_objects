@@ -11,6 +11,7 @@ from app.services.overlay import (
     overlay_objects,
 )
 from app.services.replacement import ReplacementError, replace_object_in_image
+from app.services.samples import read_sample
 
 bp = Blueprint("main", __name__)
 
@@ -43,6 +44,20 @@ def _render(
     )
 
 
+def _requested_image_bytes() -> bytes | None:
+    """Return the bytes of the sample chosen in the form, or of the uploaded file.
+
+    A sample id wins over a file. Returns None when there is no usable image.
+    """
+    sample_id = request.form.get("sample")
+    if sample_id:
+        return read_sample(sample_id)
+    uploaded = request.files.get("image")
+    if uploaded is None or not uploaded.filename:
+        return None
+    return uploaded.read()
+
+
 @bp.get("/")
 def index():
     return _render()
@@ -51,8 +66,8 @@ def index():
 @bp.post("/detect")
 def detect():
     threshold = clamp_threshold(request.form.get("threshold", type=float))
-    uploaded = request.files.get("image")
-    if uploaded is None or not uploaded.filename:
+    image_bytes = _requested_image_bytes()
+    if image_bytes is None:
         return _render(
             error="Debe seleccionar una imagen para continuar.",
             threshold=threshold,
@@ -60,7 +75,7 @@ def detect():
         )
 
     try:
-        image = load_image(uploaded.read())
+        image = load_image(image_bytes)
     except InvalidImageError:
         return _render(
             error="La imagen no es válida o está dañada.",

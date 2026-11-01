@@ -6,6 +6,7 @@ from sqlalchemy import text
 from app.config import Config
 from app.extensions import db, migrate
 from app.routes import bp
+from app.services.samples import SAMPLES
 
 
 def create_app() -> Flask:
@@ -16,6 +17,11 @@ def create_app() -> Flask:
     importlib.import_module("app.models")
     app.register_blueprint(bp)
     _register_cli(app)
+
+    @app.context_processor
+    def inject_samples():
+        # Every page that renders the upload form (including the 413 page) lists the samples.
+        return {"samples": SAMPLES}
 
     @app.errorhandler(413)
     def request_entity_too_large(_error):

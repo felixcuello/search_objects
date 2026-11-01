@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Probalo en tu ambiente · Familia Bercomat{% endblock %}</title>
+    <link rel="preload" href="{{ url_for('static', filename='fonts/figtree-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <div class="site-banner">Nuevo: probá nuestros productos en tu casa antes de comprar</div>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a class="logo" href="{{ url_for('main.index') }}" aria-label="Familia Bercomat, inicio">
+          <span class="logo-small">familia</span>
+          <span class="logo-big">bercomat</span>
+        </a>
+        <a class="pill-button" href="{{ url_for('main.index') }}">
+          Probalo en tu ambiente
+          <span class="new-badge">NUEVO</span>
+        </a>
+        {% block header_actions %}{% endblock %}
+      </div>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    <footer class="site-footer">
+      <div class="site-footer-inner">
+        <span>© Familia Bercomat</span>
+      </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
