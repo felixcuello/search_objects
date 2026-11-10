@@ -1,7 +1,12 @@
-from flask import Blueprint, Response, current_app, jsonify, render_template, request
+import mimetypes
+import re
+
+from botocore.exceptions import BotoCoreError, ClientError
+from flask import Blueprint, Response, abort, current_app, jsonify, render_template, request
 from sqlalchemy.orm import selectinload
 
 from app.models import Product
+from app.services.analytics import build_snapshot, record_photo_submission, record_replacement
 from app.services.catalog import product_to_dict, search_products
 from app.services.detector import InvalidImageError, clamp_threshold, detect_objects, load_image
 from app.services.overlay import (
@@ -12,8 +17,13 @@ from app.services.overlay import (
 )
 from app.services.replacement import ReplacementError, replace_object_in_image
 from app.services.samples import read_sample
+from app.services.storage import download_image
 
 bp = Blueprint("main", __name__)
+
+# Bucket keys are "<provider>/<sku>/<file>". Only plain segments are served, never "." or "..".
+MEDIA_KEY_PATTERN = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)+")
+MEDIA_CACHE_SECONDS = 3600
 
 
 def _render(
@@ -88,6 +98,9 @@ def detect():
     for index, obj in enumerate(objects):
         # Ids must be assigned before overlay stacking so list and boxes stay paired.
         obj["id"] = f"obj-{index}"
+    record_photo_submission(
+        [obj["label"] for obj in objects], sample_id=request.form.get("sample") or None
+    )
     assign_display_names(objects)
     attach_search_urls(objects)
     overlays = overlay_objects(objects, image_width, image_height)
@@ -128,6 +141,7 @@ def replace():
         return jsonify({"error": "La imagen no es válida o está dañada."}), 400
     except ReplacementError as error:
         return jsonify({"error": str(error)}), 502
+    record_replacement(label, product)
     return Response(png, mimetype="image/png")
 
 
@@ -147,3 +161,40 @@ def object_search():
     results = [product_to_dict(product) for product in search_products(query)]
     return jsonify({"query": query, "box": box, "results": results})
 
+
+@bp.get("/analytics")
+def analytics():
+    """Live usage dashboard; the page polls /analytics/data for its numbers."""
+    return render_template("analytics.html")
+
+
+@bp.get("/analytics/data")
+def analytics_data():
+    """Return the current analytics numbers as JSON; never cached so the page stays live."""
+    response = jsonify(build_snapshot())
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+@bp.get("/media/<path:key>")
+def media(key):
+    """Serve a product photo from the bucket, so browsers never need to reach the bucket itself.
+
+    Only keys made of plain path segments that point to an image type are served.
+    """
+    content_type = mimetypes.guess_type(key)[0] or ""
+    if not MEDIA_KEY_PATTERN.fullmatch(key) or not content_type.startswith("image/"):
+        abort(404)
+    try:
+        data = download_image(key)
+    except ClientError as error:
+        if error.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
+            abort(404)
+        current_app.logger.exception("Bucket read failed for %s", key)
+        abort(502)
+    except BotoCoreError:
+        current_app.logger.exception("Bucket unreachable for %s", key)
+        abort(502)
+    response = Response(data, mimetype=content_type)
+    response.headers["Cache-Control"] = f"public, max-age={MEDIA_CACHE_SECONDS}"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response

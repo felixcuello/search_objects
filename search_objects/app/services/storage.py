@@ -38,5 +38,9 @@ def delete_image(key: str) -> None:
 
 
 def public_url(key: str) -> str:
-    """URL the browser can use; the bucket allows anonymous reads."""
-    return f"{os.environ['S3_PUBLIC_URL'].rstrip('/')}/{key}"
+    """Path the browser can use for an image; the app serves it from the bucket.
+
+    The path is relative so it works behind any host name or tunnel, because the bucket
+    itself is only reachable from inside the Compose network.
+    """
+    return f"/media/{key}"

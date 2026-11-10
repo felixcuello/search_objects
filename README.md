@@ -51,12 +51,29 @@ make db-migrate   # autogenerate from models: make db-migrate MSG='create produc
 Add a model under `search_objects/app/models/`, then `make db-migrate MSG='...'` and `make db-upgrade`.
 `flask db migrate` diffs models against the database, like schema changes followed by `db:migrate`.
 
+## Analytics
+
+`GET /analytics` shows a live dashboard and has no authentication, because this is a prototype.
+The page polls `GET /analytics/data` every 2 seconds, and draws the charts with Chart.js (vendored in `app/static/vendor/`).
+
+Three tables hold the data, and every write is logged and ignored if it fails, so analytics never break the app:
+
+```
+photo_submissions    one row per photo sent to /detect (source: upload or sample)
+detected_objects     the labels found in uploaded photos only, never in sample photos
+object_replacements  one row per successful replacement: object type and catalog product
+```
+
+Detected objects of sample photos are skipped on purpose, because they always give the same objects.
+Replacements are counted for sample photos too.
+
 ## Storage (Silo / S3)
 
 Images live in a Silo bucket (MinIO-compatible, `pgsty/silo`).
 The `silo-init` service creates the bucket on `docker compose up`.
 Anyone can read an object by URL, but only the app key can write.
-The `images.uri` column stores the object key, and `storage.public_url(key)` builds the URL from `S3_PUBLIC_URL`.
+The `images.uri` column stores the object key, and `storage.public_url(key)` returns the path `/media/<key>`.
+The app serves that path by reading the bucket, so browsers (and tunnels) only need to reach the web app, never port 9000.
 The admin console is at http://localhost:9001 (log in with `S3_ROOT_USER` / `S3_ROOT_PASSWORD`).
 
 ### Import the Bercomat catalog

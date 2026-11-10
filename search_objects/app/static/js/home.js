@@ -11,7 +11,7 @@
   const submitButton = form.querySelector("[data-submit-upload]");
   const fileName = form.querySelector("[data-file-name]");
   const fileError = form.querySelector("[data-file-error]");
-  const uploadGrid = form.querySelector("[data-upload-grid]");
+  const uploadGrid = form.querySelector("[data-upload-section]");
   const processing = form.querySelector("[data-processing]");
   const processingImage = form.querySelector("[data-processing-image]");
   const thresholdInput = document.getElementById("threshold");

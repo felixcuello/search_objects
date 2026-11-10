@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analytics · Probalo en tu ambiente</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{{ url_for('static', filename='analytics.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Analytics</h1>
+      <p class="subtitle">Probalo en tu ambiente · uso en vivo</p>
+    </div>
+    <div class="live" data-live>
+      <span class="live-dot" aria-hidden="true"></span>
+      <span class="live-text" data-live-text>Conectando…</span>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="kpis" aria-label="Totales">
+      <article class="kpi">
+        <h2>Fotos enviadas</h2>
+        <p class="kpi-value" data-kpi="photos">0</p>
+        <p class="kpi-note"><span data-kpi="uploads">0</span> subidas · <span data-kpi="samples">0</span> de ejemplo</p>
+      </article>
+      <article class="kpi">
+        <h2>Objetos detectados</h2>
+        <p class="kpi-value" data-kpi="detected_objects">0</p>
+        <p class="kpi-note">Solo en fotos subidas</p>
+      </article>
+      <article class="kpi">
+        <h2>Reemplazos realizados</h2>
+        <p class="kpi-value" data-kpi="replacements">0</p>
+        <p class="kpi-note">Fotos subidas y de ejemplo</p>
+      </article>
+      <article class="kpi">
+        <h2>Objetos por foto subida</h2>
+        <p class="kpi-value" data-kpi="objects_per_upload">0</p>
+        <p class="kpi-note">Promedio detectado</p>
+      </article>
+    </section>
+
+    <section class="card wide" aria-label="Actividad">
+      <header class="card-head">
+        <h2>Actividad por minuto</h2>
+        <p>Última hora</p>
+      </header>
+      <div class="chart-box tall"><canvas data-chart="timeline" role="img" aria-label="Fotos y reemplazos por minuto en la última hora"></canvas></div>
+    </section>
+
+    <section class="rankings">
+      <article class="card">
+        <header class="card-head">
+          <h2>Objetos detectados</h2>
+          <p>Lo que podríamos venderle al cliente. Solo fotos subidas.</p>
+        </header>
+        <div class="chart-box"><canvas data-chart="detected" role="img" aria-label="Objetos detectados más frecuentes"></canvas></div>
+        <p class="empty" data-empty="detected" hidden>Todavía no hay fotos subidas con objetos detectados.</p>
+      </article>
+      <article class="card">
+        <header class="card-head">
+          <h2>Objetos reemplazados</h2>
+          <p>Qué quiere cambiar el cliente. Incluye fotos de ejemplo.</p>
+        </header>
+        <div class="chart-box"><canvas data-chart="replaced" role="img" aria-label="Tipos de objeto reemplazados más frecuentes"></canvas></div>
+        <p class="empty" data-empty="replaced" hidden>Todavía no hay reemplazos.</p>
+      </article>
+      <article class="card">
+        <header class="card-head">
+          <h2>Productos usados</h2>
+          <p>Qué producto del catálogo se usó para reemplazar.</p>
+        </header>
+        <div class="chart-box"><canvas data-chart="products" role="img" aria-label="Productos del catálogo más usados en reemplazos"></canvas></div>
+        <p class="empty" data-empty="products" hidden>Todavía no hay reemplazos.</p>
+      </article>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+</body>
+</html>

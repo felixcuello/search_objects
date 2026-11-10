@@ -361,11 +361,12 @@ button {
 .threshold {
   display: grid;
   gap: 4px;
-  width: min(320px, 100%);
-  margin-top: 8px;
+  width: min(420px, 100%);
+  margin: 0 auto 20px;
   color: var(--grey);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
+  text-align: center;
 }
 
 .threshold input[type="range"] {
