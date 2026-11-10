@@ -6,7 +6,13 @@ from flask import Blueprint, Response, abort, current_app, jsonify, render_templ
 from sqlalchemy.orm import selectinload
 
 from app.models import Product
-from app.services.analytics import build_snapshot, record_photo_submission, record_replacement
+from app.services.analytics import (
+    InvalidTimeframeError,
+    build_snapshot,
+    record_photo_submission,
+    record_replacement,
+    resolve_window,
+)
 from app.services.catalog import product_to_dict, search_products
 from app.services.detector import InvalidImageError, clamp_threshold, detect_objects, load_image
 from app.services.overlay import (
@@ -170,8 +176,17 @@ def analytics():
 
 @bp.get("/analytics/data")
 def analytics_data():
-    """Return the current analytics numbers as JSON; never cached so the page stays live."""
-    response = jsonify(build_snapshot())
+    """Return the analytics numbers of a timeframe as JSON; never cached so the page stays live.
+
+    The timeframe is a preset (?range=1d) or a custom window (?from=...&to=..., ISO 8601).
+    """
+    try:
+        window = resolve_window(
+            request.args.get("range"), request.args.get("from"), request.args.get("to")
+        )
+    except InvalidTimeframeError as error:
+        return jsonify({"error": str(error)}), 400
+    response = jsonify(build_snapshot(*window))
     response.headers["Cache-Control"] = "no-store"
     return response
 

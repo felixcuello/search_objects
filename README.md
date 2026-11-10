@@ -55,6 +55,8 @@ Add a model under `search_objects/app/models/`, then `make db-migrate MSG='...'`
 
 `GET /analytics` shows a live dashboard and has no authentication, because this is a prototype.
 The page polls `GET /analytics/data` every 2 seconds, and draws the charts with Chart.js (vendored in `app/static/vendor/`).
+The timeframe is chosen on the page (15m, 1h, 2h, 1d, 1w, 1mo or a custom window) and kept in the URL.
+The same choice goes to the data endpoint as `?range=1d` or `?from=<ISO>&to=<ISO>`, and it filters every number on the page.
 
 Three tables hold the data, and every write is logged and ignored if it fails, so analytics never break the app:
 

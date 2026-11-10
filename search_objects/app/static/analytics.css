@@ -53,6 +53,90 @@ p {
   font-size: 13px;
 }
 
+.topbar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.timeframe {
+  display: flex;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.timeframe button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.timeframe button:hover {
+  color: var(--text);
+}
+
+.timeframe button[aria-pressed="true"] {
+  background: var(--purple);
+  color: #14121f;
+}
+
+.timeframe button:focus-visible,
+.custom-range button:focus-visible,
+.custom-range input:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+
+.custom-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  max-width: 1280px;
+  margin: 16px auto 0;
+  padding: 0 24px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.custom-range[hidden] {
+  display: none;
+}
+
+.custom-range input {
+  margin-left: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+}
+
+.custom-range button {
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--purple);
+  color: #14121f;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.custom-error {
+  color: var(--bad);
+}
+
 .live {
   display: flex;
   align-items: center;
@@ -175,6 +259,13 @@ p {
   height: 260px;
 }
 
+/* The doughnut has a long legend, so it gets its own full-width row and a centered chart. */
+.chart-box.donut {
+  max-width: 680px;
+  height: 330px;
+  margin: 0 auto;
+}
+
 .rankings {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -190,12 +281,22 @@ p {
 
 @media (max-width: 520px) {
   .topbar,
-  .dashboard {
+  .dashboard,
+  .custom-range {
     padding-left: 16px;
     padding-right: 16px;
   }
 
+  .timeframe button {
+    padding: 6px 9px;
+  }
+
   .rankings {
     grid-template-columns: 1fr;
+  }
+
+  /* Narrow screens put the legend below the doughnut, which needs more height. */
+  .chart-box.donut {
+    height: 540px;
   }
 }

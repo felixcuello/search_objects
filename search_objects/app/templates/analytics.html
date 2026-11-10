@@ -13,11 +13,29 @@
       <h1>Analytics</h1>
       <p class="subtitle">Probalo en tu ambiente · uso en vivo</p>
     </div>
-    <div class="live" data-live>
-      <span class="live-dot" aria-hidden="true"></span>
-      <span class="live-text" data-live-text>Conectando…</span>
+    <div class="topbar-controls">
+      <div class="timeframe" role="group" aria-label="Rango de tiempo" data-timeframe>
+        <button type="button" data-range="15m">15m</button>
+        <button type="button" data-range="1h">1h</button>
+        <button type="button" data-range="2h">2h</button>
+        <button type="button" data-range="1d">1d</button>
+        <button type="button" data-range="1w">1w</button>
+        <button type="button" data-range="1mo">1mo</button>
+        <button type="button" data-range="custom">Custom</button>
+      </div>
+      <div class="live" data-live>
+        <span class="live-dot" aria-hidden="true"></span>
+        <span class="live-text" data-live-text>Conectando…</span>
+      </div>
     </div>
   </header>
+
+  <form class="custom-range" data-custom-form hidden>
+    <label>Desde <input type="datetime-local" required data-custom-from></label>
+    <label>Hasta <input type="datetime-local" required data-custom-to></label>
+    <button type="submit">Aplicar</button>
+    <p class="custom-error" role="alert" data-custom-error hidden></p>
+  </form>
 
   <main class="dashboard">
     <section class="kpis" aria-label="Totales">
@@ -45,8 +63,8 @@
 
     <section class="card wide" aria-label="Actividad">
       <header class="card-head">
-        <h2>Actividad por minuto</h2>
-        <p>Última hora</p>
+        <h2>Actividad</h2>
+        <p data-timeline-note>Última hora</p>
       </header>
       <div class="chart-box tall"><canvas data-chart="timeline" role="img" aria-label="Fotos y reemplazos por minuto en la última hora"></canvas></div>
     </section>
@@ -58,7 +76,7 @@
           <p>Lo que podríamos venderle al cliente. Solo fotos subidas.</p>
         </header>
         <div class="chart-box"><canvas data-chart="detected" role="img" aria-label="Objetos detectados más frecuentes"></canvas></div>
-        <p class="empty" data-empty="detected" hidden>Todavía no hay fotos subidas con objetos detectados.</p>
+        <p class="empty" data-empty="detected" hidden>No hay fotos subidas con objetos detectados en este período.</p>
       </article>
       <article class="card">
         <header class="card-head">
@@ -66,17 +84,18 @@
           <p>Qué quiere cambiar el cliente. Incluye fotos de ejemplo.</p>
         </header>
         <div class="chart-box"><canvas data-chart="replaced" role="img" aria-label="Tipos de objeto reemplazados más frecuentes"></canvas></div>
-        <p class="empty" data-empty="replaced" hidden>Todavía no hay reemplazos.</p>
-      </article>
-      <article class="card">
-        <header class="card-head">
-          <h2>Productos usados</h2>
-          <p>Qué producto del catálogo se usó para reemplazar.</p>
-        </header>
-        <div class="chart-box"><canvas data-chart="products" role="img" aria-label="Productos del catálogo más usados en reemplazos"></canvas></div>
-        <p class="empty" data-empty="products" hidden>Todavía no hay reemplazos.</p>
+        <p class="empty" data-empty="replaced" hidden>No hay reemplazos en este período.</p>
       </article>
     </section>
+
+    <article class="card wide" aria-label="Productos usados">
+      <header class="card-head">
+        <h2>Productos usados</h2>
+        <p>Qué producto del catálogo se usó para reemplazar. Participación sobre todos los reemplazos.</p>
+      </header>
+      <div class="chart-box donut"><canvas data-chart="products" role="img" aria-label="Participación de cada producto del catálogo en los reemplazos"></canvas></div>
+      <p class="empty" data-empty="products" hidden>No hay reemplazos en este período.</p>
+    </article>
   </main>
 
   <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
